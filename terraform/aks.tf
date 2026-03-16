@@ -1,0 +1,74 @@
+# FABRIC AKS Cluster Configuration
+# Design Reference: Section 7.1 (Infrastructure Components), Section 7.2 (Environment Isolation)
+# Decision #2: Single cluster with namespace isolation (staging/production)
+
+# Resource Group for all FABRIC resources
+resource "azurerm_resource_group" "fabric" {
+  name     = var.resource_group_name
+  location = var.location
+  tags     = merge(var.tags, { environment = var.environment })
+}
+
+# AKS Cluster — single cluster, namespace isolation
+resource "azurerm_kubernetes_cluster" "fabric" {
+  name                = var.cluster_name
+  location            = azurerm_resource_group.fabric.location
+  resource_group_name = azurerm_resource_group.fabric.name
+  dns_prefix          = var.cluster_name
+  kubernetes_version  = var.kubernetes_version
+  sku_tier            = "Free"
+
+  # System node pool: Argo CD, Vault, Prometheus, Grafana, Loki, Tempo, ESO, NGINX Ingress, Argo Rollouts
+  default_node_pool {
+    name                = "system"
+    node_count          = var.system_node_count
+    vm_size             = var.system_node_vm_size
+    os_disk_size_gb     = 50
+    enable_auto_scaling = false
+
+    node_labels = {
+      "fabric/pool" = "system"
+    }
+  }
+
+  identity {
+    type = "SystemAssigned"
+  }
+
+  network_profile {
+    network_plugin = "azure"
+    network_policy = "azure"
+  }
+
+  tags = merge(var.tags, { environment = var.environment })
+}
+
+# Application node pool: FABRIC application pods
+resource "azurerm_kubernetes_cluster_node_pool" "app" {
+  name                  = "app"
+  kubernetes_cluster_id = azurerm_kubernetes_cluster.fabric.id
+  vm_size               = var.app_node_vm_size
+  node_count            = var.app_node_count
+  os_disk_size_gb       = 50
+  enable_auto_scaling   = false
+
+  node_labels = {
+    "fabric/pool" = "app"
+  }
+
+  tags = merge(var.tags, { environment = var.environment })
+}
+
+# Namespace list per Section 7.2 and CLAUDE.md
+locals {
+  namespaces = [
+    "staging",
+    "production",
+    "argocd",
+    "argo-rollouts",
+    "vault",
+    "monitoring",
+    "external-secrets",
+    "ingress-nginx",
+  ]
+}

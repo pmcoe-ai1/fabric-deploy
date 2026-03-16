@@ -1,0 +1,12 @@
+# Example Terraform variables — copy to terraform.tfvars and customize
+# Do NOT commit terraform.tfvars (contains environment-specific values)
+
+environment         = "staging"
+location            = "australiaeast"
+resource_group_name = "fabric-rg"
+cluster_name        = "fabric-aks"
+kubernetes_version  = "1.29"
+system_node_count   = 2
+system_node_vm_size = "Standard_B2s"
+app_node_count      = 2
+app_node_vm_size    = "Standard_B2s"
