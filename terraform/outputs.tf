@@ -25,3 +25,19 @@ output "cluster_fqdn" {
   value       = azurerm_kubernetes_cluster.fabric.fqdn
   description = "AKS cluster FQDN"
 }
+
+output "postgresql_fqdn" {
+  value       = azurerm_postgresql_flexible_server.fabric.fqdn
+  description = "PostgreSQL Flexible Server FQDN"
+}
+
+output "postgresql_admin_username" {
+  value       = azurerm_postgresql_flexible_server.fabric.administrator_login
+  sensitive   = true
+  description = "PostgreSQL administrator username"
+}
+
+output "vault_unseal_key_vault_name" {
+  value       = azurerm_key_vault.vault_unseal.name
+  description = "Azure Key Vault name used for Vault auto-unseal"
+}

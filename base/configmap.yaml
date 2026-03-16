@@ -1,0 +1,12 @@
+# FABRIC Application ConfigMap
+# Non-secret configuration — environment-specific values via overlays
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fabric-config
+  labels:
+    app.kubernetes.io/name: fabric
+    app.kubernetes.io/part-of: fabric
+data:
+  NODE_ENV: "production"
+  LOG_LEVEL: "info"

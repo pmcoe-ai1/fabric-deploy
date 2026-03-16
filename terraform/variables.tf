@@ -62,3 +62,28 @@ variable "tags" {
   }
   description = "Tags applied to all Azure resources"
 }
+
+variable "postgresql_admin_username" {
+  type        = string
+  default     = "fabricadmin"
+  description = "Administrator username for PostgreSQL Flexible Server"
+}
+
+variable "postgresql_admin_password" {
+  type        = string
+  sensitive   = true
+  description = "Administrator password for PostgreSQL Flexible Server"
+}
+
+variable "dns_zone_name" {
+  type        = string
+  default     = "fabric.internal"
+  description = "DNS zone name for ingress hostnames (Vault, Argo CD, Grafana)"
+}
+
+variable "grafana_admin_password" {
+  type        = string
+  sensitive   = true
+  default     = "admin"
+  description = "Grafana admin password (override in production)"
+}

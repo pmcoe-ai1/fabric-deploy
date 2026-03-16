@@ -1,0 +1,9 @@
+# FABRIC Application Namespace
+# Applied by Kustomize — environment-specific via overlays
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: staging
+  labels:
+    app.kubernetes.io/part-of: fabric
+    app.kubernetes.io/managed-by: kustomize
