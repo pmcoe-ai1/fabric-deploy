@@ -1,0 +1,74 @@
+# Vault Raft Snapshot CronJob
+# Task J-01: Automated daily Raft snapshots to Azure Blob Storage
+# Schedule: Daily at 02:00 UTC
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: vault-raft-snapshot
+  namespace: vault
+  labels:
+    app.kubernetes.io/name: vault-snapshot
+    app.kubernetes.io/part-of: fabric
+spec:
+  schedule: "0 2 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 300
+      template:
+        spec:
+          serviceAccountName: vault-snapshot
+          nodeSelector:
+            fabric/pool: system
+          restartPolicy: OnFailure
+          containers:
+            - name: snapshot
+              image: hashicorp/vault:1.15
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -e
+                  SNAPSHOT_NAME="vault-snapshot-$(date +%Y%m%d-%H%M%S).snap"
+                  echo "Taking Raft snapshot: ${SNAPSHOT_NAME}"
+
+                  # Take snapshot
+                  vault operator raft snapshot save "/tmp/${SNAPSHOT_NAME}"
+
+                  # Upload to Azure Blob Storage using azcopy (pre-installed)
+                  # The SAS token is provided via environment variable
+                  azcopy copy "/tmp/${SNAPSHOT_NAME}" \
+                    "${AZURE_BLOB_CONTAINER_URL}/${SNAPSHOT_NAME}${AZURE_SAS_TOKEN}"
+
+                  echo "Snapshot uploaded: ${SNAPSHOT_NAME}"
+
+                  # Clean up local file
+                  rm -f "/tmp/${SNAPSHOT_NAME}"
+              env:
+                - name: VAULT_ADDR
+                  value: "http://vault.vault:8200"
+                - name: VAULT_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: vault-snapshot-token
+                      key: token
+                - name: AZURE_BLOB_CONTAINER_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: vault-snapshot-azure
+                      key: container_url
+                - name: AZURE_SAS_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: vault-snapshot-azure
+                      key: sas_token
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  cpu: 200m
+                  memory: 128Mi

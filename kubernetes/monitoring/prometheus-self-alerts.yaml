@@ -1,0 +1,50 @@
+# Prometheus Self-Monitoring Alerts
+# Task J-02: Alerting for Prometheus/Grafana operational issues
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: prometheus-self-alerts
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/part-of: fabric
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: prometheus-self-monitoring
+      rules:
+        - alert: PrometheusTargetDown
+          expr: up == 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Prometheus target down"
+            description: "Target {{ $labels.job }}/{{ $labels.instance }} has been down for 5 minutes."
+
+        - alert: PrometheusTSDBCompactionsFailing
+          expr: increase(prometheus_tsdb_compactions_failed_total[6h]) > 0
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Prometheus TSDB compaction failures"
+            description: "Prometheus TSDB compactions have failed in the last 6 hours. Check disk space and Prometheus logs."
+
+        - alert: PrometheusStorageDiskUsageHigh
+          expr: |
+            (prometheus_tsdb_storage_blocks_bytes / (1024 * 1024 * 1024 * 50)) > 0.8
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Prometheus storage disk usage above 80%"
+            description: "Prometheus storage is at {{ $value | humanizePercentage }} of 50Gi PVC. See runbooks/prometheus-grafana.md Section 3."
+
+        - alert: AlertmanagerNotificationFailed
+          expr: increase(alertmanager_notifications_failed_total[15m]) > 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Alertmanager notification failures"
+            description: "Alertmanager has failed to send {{ $value }} notifications via {{ $labels.integration }} in the last 15 minutes."

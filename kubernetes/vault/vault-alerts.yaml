@@ -1,0 +1,49 @@
+# Vault PrometheusRule Alerts
+# Task J-01: Alerting for Vault operational issues
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: vault-alerts
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/part-of: fabric
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: vault
+      rules:
+        - alert: VaultSealed
+          expr: vault_core_unsealed == 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Vault is sealed"
+            description: "Vault instance {{ $labels.instance }} is sealed. Immediate action required — see runbooks/vault.md Section 3."
+
+        - alert: VaultLeaderLost
+          expr: vault_raft_leader == 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Vault Raft cluster has no leader"
+            description: "No Raft leader elected for 5 minutes. Check cluster health with `vault operator raft list-peers`."
+
+        - alert: VaultStorageHigh
+          expr: vault_raft_storage_used_bytes / vault_raft_storage_capacity_bytes > 0.8
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Vault storage usage above 80%"
+            description: "Vault Raft storage is at {{ $value | humanizePercentage }}. Consider increasing PVC size or pruning old KV versions."
+
+        - alert: VaultAuditLogFailure
+          expr: increase(vault_audit_log_request_failure[5m]) > 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Vault audit log write failure"
+            description: "Vault audit log writes are failing. Vault will stop serving requests if audit cannot write. Check audit backend immediately."

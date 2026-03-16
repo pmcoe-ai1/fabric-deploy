@@ -1,0 +1,45 @@
+# Argo CD Application — FABRIC Production
+# Design Reference: Section 6.1 (Argo CD Configuration)
+# Sync policy: Semi-automated (auto-sync after PR merge, self-heal, prune)
+# Production overlay changes require a PR — direct commits not permitted
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: fabric-production
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: fabric
+    fabric/environment: production
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/pmcoe-ai1/fabric-deploy.git
+    targetRevision: main
+    path: overlays/production
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: production
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PruneLast=true
+      - ApplyOutOfSyncOnly=true
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 5m
+  # Sync waves — same ordering as staging:
+  #   Wave 0: Namespace, ConfigMaps, Secrets (via ESO)
+  #   Wave 1: Database migrations (Prisma migrate deploy Job) — includes down migration verification (Decision #8)
+  #   Wave 2: Immutability triggers (SQL apply Job)
+  #   Wave 3: Application deployment (Deployment/Rollout)
+  #   Wave 4: Post-deploy hooks (chain.js, deprecation-protocol, capability-notify)
