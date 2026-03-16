@@ -1,0 +1,126 @@
+# FABRIC Staging — Blue-Green Rollout
+# Design Reference: Section 6.2.1 (Staging: Blue-Green Strategy)
+# Replaces the base Deployment resource for staging environment
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: fabric
+  namespace: staging
+  labels:
+    app.kubernetes.io/name: fabric
+    app.kubernetes.io/part-of: fabric
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: fabric
+  strategy:
+    blueGreen:
+      activeService: fabric-staging-active
+      previewService: fabric-staging-preview
+      autoPromotionEnabled: true
+      scaleDownDelaySeconds: 1800  # 30 minutes — retain old version
+      prePromotionAnalysis:
+        templates:
+          - templateName: staging-health-check
+      antiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          weight: 100
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: fabric
+    spec:
+      containers:
+        - name: fabric
+          image: ghcr.io/pmcoe-ai1/fabric:latest
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+            - name: metrics
+              containerPort: 9090
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          envFrom:
+            - secretRef:
+                name: fabric-secrets
+---
+# Active service — receives production traffic
+apiVersion: v1
+kind: Service
+metadata:
+  name: fabric-staging-active
+  namespace: staging
+  labels:
+    app.kubernetes.io/name: fabric
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+    - name: metrics
+      port: 9090
+      targetPort: metrics
+  selector:
+    app.kubernetes.io/name: fabric
+---
+# Preview service — receives test traffic during blue-green switch
+apiVersion: v1
+kind: Service
+metadata:
+  name: fabric-staging-preview
+  namespace: staging
+  labels:
+    app.kubernetes.io/name: fabric
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+    - name: metrics
+      port: 9090
+      targetPort: metrics
+  selector:
+    app.kubernetes.io/name: fabric
+---
+# Pre-promotion analysis — health check before promoting
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: staging-health-check
+  namespace: staging
+spec:
+  metrics:
+    - name: health-check
+      provider:
+        prometheus:
+          address: http://kube-prometheus-stack-prometheus.monitoring:9090
+          query: |
+            sum(rate(http_requests_total{namespace="staging",status=~"5.."}[2m]))
+            / sum(rate(http_requests_total{namespace="staging"}[2m]))
+      successCondition: result[0] < 0.05
+      failureLimit: 3
+      interval: 30s
+      count: 5

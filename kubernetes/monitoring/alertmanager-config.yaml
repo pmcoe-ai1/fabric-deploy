@@ -1,0 +1,181 @@
+# Alertmanager Routing Configuration
+# Design Reference: Section 9.1 (Alertmanager), Section 9.2 (Alert Thresholds)
+# Task F-06: Route alerts by severity to Slack/PagerDuty/email
+#
+# NOTE: Notification channel secrets (Slack webhook, PagerDuty key, email config)
+# must be provided by the project team and stored in Vault (secret/fabric/shared/alertmanager).
+#
+# This config is applied via Helm values in terraform/monitoring.tf:
+#   set { name = "alertmanager.config" ... }
+# Or as a Kubernetes Secret patched onto the Alertmanager instance.
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: alertmanager-fabric-config
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/part-of: fabric
+    app.kubernetes.io/managed-by: kustomize
+type: Opaque
+stringData:
+  alertmanager.yaml: |
+    global:
+      resolve_timeout: 5m
+
+    # Inhibition rules — prevent warning noise when critical is firing
+    inhibit_rules:
+      - source_matchers:
+          - severity = critical
+        target_matchers:
+          - severity = warning
+        equal:
+          - alertname
+          - namespace
+
+    route:
+      receiver: default
+      group_by: [alertname, namespace, severity]
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 4h
+      routes:
+        # Critical alerts → PagerDuty (immediate)
+        - receiver: pagerduty-critical
+          matchers:
+            - severity = critical
+          group_wait: 10s
+          repeat_interval: 1h
+          continue: true
+
+        # Critical alerts → also Slack #fabric-alerts-critical
+        - receiver: slack-critical
+          matchers:
+            - severity = critical
+          group_wait: 10s
+          repeat_interval: 1h
+
+        # Warning alerts → Slack #fabric-alerts
+        - receiver: slack-warning
+          matchers:
+            - severity = warning
+          group_wait: 1m
+          repeat_interval: 4h
+
+    receivers:
+      - name: default
+        # Catch-all — sends to general Slack channel
+        slack_configs:
+          - api_url: SLACK_WEBHOOK_URL_PLACEHOLDER
+            channel: '#fabric-alerts'
+            title: '{{ template "slack.title" . }}'
+            text: '{{ template "slack.text" . }}'
+            send_resolved: true
+
+      - name: pagerduty-critical
+        pagerduty_configs:
+          - service_key: PAGERDUTY_SERVICE_KEY_PLACEHOLDER
+            severity: '{{ if eq .CommonLabels.severity "critical" }}critical{{ else }}warning{{ end }}'
+            description: '{{ .CommonAnnotations.summary }}'
+            details:
+              alertname: '{{ .CommonLabels.alertname }}'
+              namespace: '{{ .CommonLabels.namespace }}'
+              description: '{{ .CommonAnnotations.description }}'
+
+      - name: slack-critical
+        slack_configs:
+          - api_url: SLACK_WEBHOOK_URL_PLACEHOLDER
+            channel: '#fabric-alerts-critical'
+            title: ':rotating_light: CRITICAL: {{ .CommonLabels.alertname }}'
+            text: |
+              *Alert:* {{ .CommonAnnotations.summary }}
+              *Namespace:* {{ .CommonLabels.namespace }}
+              *Description:* {{ .CommonAnnotations.description }}
+              *Runbook:* {{ .CommonAnnotations.runbook_url }}
+            color: danger
+            send_resolved: true
+
+      - name: slack-warning
+        slack_configs:
+          - api_url: SLACK_WEBHOOK_URL_PLACEHOLDER
+            channel: '#fabric-alerts'
+            title: ':warning: WARNING: {{ .CommonLabels.alertname }}'
+            text: |
+              *Alert:* {{ .CommonAnnotations.summary }}
+              *Namespace:* {{ .CommonLabels.namespace }}
+              *Description:* {{ .CommonAnnotations.description }}
+            color: warning
+            send_resolved: true
+
+    templates: []
+---
+# FABRIC-specific alert rules — Critical and Warning thresholds from Section 9.2
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: fabric-application-alerts
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/part-of: fabric
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: fabric-critical
+      rules:
+        - alert: ContractVersionMismatch
+          expr: increase(contract_version_mismatch_total[5m]) > 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Contract version mismatch detected"
+            description: "Domain {{ $labels.domain }} has contract version mismatches. This indicates consumer/provider version drift."
+
+        - alert: ImmutabilityTriggerViolation
+          expr: increase(immutability_trigger_violation_total[5m]) > 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Immutability trigger violation"
+            description: "Table {{ $labels.table }}, column {{ $labels.column }} — an immutable field was modified."
+
+    - name: fabric-warning
+      rules:
+        - alert: DependencyAdapterFailureRate
+          expr: sum(rate(dependency_adapter_failure_total[5m])) > 0.01
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Dependency adapter failure rate elevated"
+            description: "Adapter {{ $labels.adapter }} failure rate is {{ $value }}/s (threshold: 0.01/s)."
+
+        - alert: HighP99Latency
+          expr: histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le)) > 0.5
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "P99 latency above 500ms"
+            description: "P99 HTTP request latency is {{ $value }}s (threshold: 500ms)."
+
+        - alert: High5xxRate
+          expr: |
+            sum(rate(http_requests_total{status=~"5.."}[5m]))
+            / sum(rate(http_requests_total[5m])) > 0.001
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "5xx error rate above 0.1%"
+            description: "5xx error rate is {{ $value | humanizePercentage }}."
+
+        - alert: LokiIngestionLag
+          expr: loki_ingester_chunk_age_seconds > 30
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Loki ingestion lag above 30s"
+            description: "Loki chunk age is {{ $value }}s."

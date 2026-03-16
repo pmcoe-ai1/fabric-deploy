@@ -1,0 +1,31 @@
+# Tempo PrometheusRule Alerts
+# Task J-04: Alerting for Tempo operational issues
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: tempo-alerts
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/part-of: fabric
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: tempo
+      rules:
+        - alert: TempoIngestionErrorRate
+          expr: sum(rate(tempo_distributor_spans_received_total{status="error"}[5m])) > 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Tempo trace ingestion errors"
+            description: "Tempo is failing to ingest traces. Check OTel Collector and Tempo pod resources."
+
+        - alert: TempoStorageHigh
+          expr: kubelet_volume_stats_used_bytes{persistentvolumeclaim=~".*tempo.*"} / kubelet_volume_stats_capacity_bytes{persistentvolumeclaim=~".*tempo.*"} > 0.8
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Tempo storage usage above 80%"
+            description: "Tempo PVC is at {{ $value | humanizePercentage }}. Expand PVC or reduce retention. See runbooks/tempo.md."

@@ -1,0 +1,40 @@
+# Loki PrometheusRule Alerts
+# Task J-03: Alerting for Loki operational issues
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: loki-alerts
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/part-of: fabric
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: loki
+      rules:
+        - alert: LokiIngestionErrorRate
+          expr: sum(rate(loki_distributor_lines_received_total{status="error"}[5m])) > 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Loki ingestion errors detected"
+            description: "Loki is failing to ingest logs. Check Loki pod resources and Promtail configuration."
+
+        - alert: LokiStorageHigh
+          expr: kubelet_volume_stats_used_bytes{persistentvolumeclaim=~".*loki.*"} / kubelet_volume_stats_capacity_bytes{persistentvolumeclaim=~".*loki.*"} > 0.8
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Loki storage usage above 80%"
+            description: "Loki PVC is at {{ $value | humanizePercentage }}. Expand PVC or reduce retention. See runbooks/loki.md."
+
+        - alert: PromtailNotRunning
+          expr: kube_daemonset_status_number_unavailable{daemonset="promtail"} > 0
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Promtail not running on all nodes"
+            description: "{{ $value }} Promtail pods are unavailable. Logs from affected nodes are not being collected."

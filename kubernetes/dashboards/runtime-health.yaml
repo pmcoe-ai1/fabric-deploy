@@ -1,0 +1,77 @@
+# Grafana Dashboard — FABRIC Runtime Health
+# Design Reference: Section 9.3 (Dashboards as Code)
+# Task F-05: HTTP rates, error rates, latency, contract mismatches, lifecycle failures
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-runtime-health
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+    app.kubernetes.io/part-of: fabric
+data:
+  runtime-health.json: |
+    {
+      "annotations": { "list": [] },
+      "editable": true,
+      "panels": [
+        {
+          "title": "HTTP Request Rate",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+          "targets": [{ "expr": "sum by (namespace) (rate(http_requests_total[5m]))", "legendFormat": "{{namespace}}" }],
+          "fieldConfig": { "defaults": { "unit": "reqps" } }
+        },
+        {
+          "title": "HTTP Error Rate (5xx)",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+          "targets": [{ "expr": "sum by (namespace) (rate(http_requests_total{status=~\"5..\"}[5m])) / sum by (namespace) (rate(http_requests_total[5m])) * 100", "legendFormat": "{{namespace}}" }],
+          "fieldConfig": { "defaults": { "unit": "percent", "thresholds": { "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}] } } }
+        },
+        {
+          "title": "Latency Percentiles",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+          "targets": [
+            { "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))", "legendFormat": "P50" },
+            { "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))", "legendFormat": "P95" },
+            { "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))", "legendFormat": "P99" }
+          ],
+          "fieldConfig": { "defaults": { "unit": "s" } }
+        },
+        {
+          "title": "Contract Version Mismatches",
+          "type": "stat",
+          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 8 },
+          "targets": [{ "expr": "sum(rate(contract_version_mismatch_total[5m]))", "legendFormat": "Mismatches/s" }],
+          "fieldConfig": { "defaults": { "thresholds": { "steps": [{"color": "green", "value": null}, {"color": "red", "value": 0.001}] } } }
+        },
+        {
+          "title": "Lifecycle Transition Failures",
+          "type": "stat",
+          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 8 },
+          "targets": [{ "expr": "sum(rate(lifecycle_transition_failure_total[5m]))", "legendFormat": "Failures/s" }],
+          "fieldConfig": { "defaults": { "thresholds": { "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 0.001}] } } }
+        },
+        {
+          "title": "Dependency Adapter Health",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+          "targets": [{ "expr": "sum by (adapter) (rate(dependency_adapter_failure_total[5m]))", "legendFormat": "{{adapter}}" }],
+          "fieldConfig": { "defaults": { "unit": "ops" } }
+        },
+        {
+          "title": "Immutability Trigger Violations",
+          "type": "stat",
+          "gridPos": { "h": 4, "w": 12, "x": 0, "y": 16 },
+          "targets": [{ "expr": "sum(immutability_trigger_violation_total)", "legendFormat": "Total Violations" }],
+          "fieldConfig": { "defaults": { "thresholds": { "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}] } } }
+        }
+      ],
+      "schemaVersion": 39,
+      "tags": ["fabric", "runtime"],
+      "time": { "from": "now-6h", "to": "now" },
+      "title": "FABRIC Runtime Health",
+      "uid": "fabric-runtime-health"
+    }

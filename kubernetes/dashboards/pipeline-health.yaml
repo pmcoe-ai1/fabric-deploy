@@ -1,0 +1,66 @@
+# Grafana Dashboard — FABRIC Pipeline Health
+# Design Reference: Section 9.3 (Dashboards as Code)
+# Task F-05: CI workflow success/failure rates, pipeline duration, codegen timing, gate pass/fail
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-pipeline-health
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+    app.kubernetes.io/part-of: fabric
+data:
+  pipeline-health.json: |
+    {
+      "annotations": { "list": [] },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 1,
+      "id": null,
+      "links": [],
+      "panels": [
+        {
+          "title": "CI Workflow Success Rate (24h)",
+          "type": "stat",
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+          "targets": [{ "expr": "sum(rate(github_workflow_run_duration_seconds_count{status=\"success\"}[24h])) / sum(rate(github_workflow_run_duration_seconds_count[24h])) * 100", "legendFormat": "Success %" }],
+          "fieldConfig": { "defaults": { "unit": "percent", "thresholds": { "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 90}, {"color": "green", "value": 95}] } } }
+        },
+        {
+          "title": "Pipeline Duration (P95)",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+          "targets": [{ "expr": "histogram_quantile(0.95, sum(rate(github_workflow_run_duration_seconds_bucket[1h])) by (le, workflow))", "legendFormat": "{{workflow}}" }],
+          "fieldConfig": { "defaults": { "unit": "s" } }
+        },
+        {
+          "title": "Gate Pass/Fail by Domain",
+          "type": "bargauge",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+          "targets": [
+            { "expr": "sum by (domain) (gate_pass_total)", "legendFormat": "{{domain}} pass" },
+            { "expr": "sum by (domain) (gate_fail_total)", "legendFormat": "{{domain}} fail" }
+          ]
+        },
+        {
+          "title": "GapFlag Emissions",
+          "type": "stat",
+          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+          "targets": [{ "expr": "sum(gapflag_emission_total)", "legendFormat": "Total GapFlags" }],
+          "fieldConfig": { "defaults": { "thresholds": { "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}] } } }
+        },
+        {
+          "title": "Chain Records by Stage",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 12 },
+          "targets": [{ "expr": "sum by (stage) (rate(chain_record_total[1h]))", "legendFormat": "{{stage}}" }],
+          "fieldConfig": { "defaults": { "unit": "ops" } }
+        }
+      ],
+      "schemaVersion": 39,
+      "tags": ["fabric", "pipeline"],
+      "templating": { "list": [] },
+      "time": { "from": "now-24h", "to": "now" },
+      "title": "FABRIC Pipeline Health",
+      "uid": "fabric-pipeline-health"
+    }

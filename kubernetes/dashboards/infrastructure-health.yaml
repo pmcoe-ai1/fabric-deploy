@@ -1,0 +1,80 @@
+# Grafana Dashboard — Infrastructure Health
+# Design Reference: Section 9.3 (Dashboards as Code)
+# Task F-05: AKS nodes, pods, PostgreSQL, Vault, Prometheus, Loki, Tempo
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-infrastructure-health
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+    app.kubernetes.io/part-of: fabric
+data:
+  infrastructure-health.json: |
+    {
+      "annotations": { "list": [] },
+      "editable": true,
+      "panels": [
+        {
+          "title": "AKS Node CPU Utilisation",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+          "targets": [{ "expr": "100 - (avg by (node) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)", "legendFormat": "{{node}}" }],
+          "fieldConfig": { "defaults": { "unit": "percent", "max": 100 } }
+        },
+        {
+          "title": "AKS Node Memory Utilisation",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+          "targets": [{ "expr": "(1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100", "legendFormat": "{{node}}" }],
+          "fieldConfig": { "defaults": { "unit": "percent", "max": 100 } }
+        },
+        {
+          "title": "Pod Status by Namespace",
+          "type": "table",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+          "targets": [{ "expr": "sum by (namespace, phase) (kube_pod_status_phase)", "legendFormat": "{{namespace}} {{phase}}", "format": "table", "instant": true }]
+        },
+        {
+          "title": "Vault Seal Status",
+          "type": "stat",
+          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 8 },
+          "targets": [{ "expr": "vault_core_unsealed", "legendFormat": "Unsealed" }],
+          "fieldConfig": { "defaults": { "mappings": [{"type": "value", "options": {"0": {"text": "SEALED", "color": "red"}, "1": {"text": "UNSEALED", "color": "green"}}}] } }
+        },
+        {
+          "title": "Prometheus Targets Health",
+          "type": "stat",
+          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 8 },
+          "targets": [
+            { "expr": "count(up == 1)", "legendFormat": "Healthy" },
+            { "expr": "count(up == 0)", "legendFormat": "Down" }
+          ]
+        },
+        {
+          "title": "Loki Ingestion Rate",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 16 },
+          "targets": [{ "expr": "sum(rate(loki_distributor_lines_received_total[5m]))", "legendFormat": "Lines/s" }],
+          "fieldConfig": { "defaults": { "unit": "short" } }
+        },
+        {
+          "title": "Tempo Trace Throughput",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 16 },
+          "targets": [{ "expr": "sum(rate(tempo_distributor_spans_received_total[5m]))", "legendFormat": "Spans/s" }],
+          "fieldConfig": { "defaults": { "unit": "short" } }
+        },
+        {
+          "title": "PostgreSQL Connections",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 16 },
+          "targets": [{ "expr": "pg_stat_activity_count", "legendFormat": "{{datname}}" }]
+        }
+      ],
+      "schemaVersion": 39,
+      "tags": ["fabric", "infrastructure"],
+      "time": { "from": "now-6h", "to": "now" },
+      "title": "Infrastructure Health",
+      "uid": "fabric-infrastructure-health"
+    }

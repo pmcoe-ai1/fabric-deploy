@@ -1,0 +1,57 @@
+# Grafana Dashboard — Deployment Status
+# Design Reference: Section 9.3 (Dashboards as Code)
+# Task F-05: Argo Rollouts progress, blue-green status, rollback history
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-deployment-status
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+    app.kubernetes.io/part-of: fabric
+data:
+  deployment-status.json: |
+    {
+      "annotations": { "list": [] },
+      "editable": true,
+      "panels": [
+        {
+          "title": "Rollout Phase",
+          "type": "stat",
+          "gridPos": { "h": 4, "w": 8, "x": 0, "y": 0 },
+          "targets": [{ "expr": "rollout_phase{namespace=~\"staging|production\"}", "legendFormat": "{{namespace}} — {{rollout}}" }]
+        },
+        {
+          "title": "Active vs Preview Pods",
+          "type": "bargauge",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+          "targets": [
+            { "expr": "kube_deployment_status_replicas_available{namespace=~\"staging|production\"}", "legendFormat": "{{namespace}}/{{deployment}} available" }
+          ]
+        },
+        {
+          "title": "Deployment Frequency (7d)",
+          "type": "stat",
+          "gridPos": { "h": 4, "w": 8, "x": 8, "y": 0 },
+          "targets": [{ "expr": "count(count_over_time(rollout_info_replicas_desired{namespace=~\"staging|production\"}[7d]))", "legendFormat": "Deployments" }]
+        },
+        {
+          "title": "Rollback Events",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+          "targets": [{ "expr": "sum by (namespace) (increase(rollout_events_total{type=\"Rollback\"}[24h]))", "legendFormat": "{{namespace}}" }]
+        },
+        {
+          "title": "Canary Weight (Production)",
+          "type": "gauge",
+          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 0 },
+          "targets": [{ "expr": "rollout_canary_weight{namespace=\"production\"}", "legendFormat": "Canary %" }],
+          "fieldConfig": { "defaults": { "unit": "percent", "max": 100, "thresholds": { "steps": [{"color": "blue", "value": null}, {"color": "green", "value": 100}] } } }
+        }
+      ],
+      "schemaVersion": 39,
+      "tags": ["fabric", "deployment"],
+      "time": { "from": "now-24h", "to": "now" },
+      "title": "Deployment Status",
+      "uid": "fabric-deployment-status"
+    }
