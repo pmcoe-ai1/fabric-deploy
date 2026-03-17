@@ -18,3 +18,5 @@ resources:
   - vault/raft-snapshot-cronjob.yaml
   - vault/vault-alerts.yaml
   - vault/vault-snapshot-sa.yaml
+  # Note: ClusterSecretStore is managed in terraform/external-secrets.tf
+  # as a kubernetes_manifest resource (Defect 8)

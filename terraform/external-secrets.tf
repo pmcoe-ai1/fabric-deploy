@@ -62,3 +62,45 @@ resource "helm_release" "external_secrets" {
     value = "monitoring"
   }
 }
+
+# ClusterSecretStore — Vault Backend
+# Design Reference: Section 8.2 (External Secrets Operator Flow)
+# Points to internal Vault cluster address via Kubernetes auth.
+# Managed in Terraform because it's a cluster-scoped CRD that depends on
+# both ESO and Vault being deployed first.
+resource "kubernetes_manifest" "cluster_secret_store" {
+  depends_on = [
+    helm_release.external_secrets,
+    helm_release.vault
+  ]
+
+  manifest = {
+    apiVersion = "external-secrets.io/v1beta1"
+    kind       = "ClusterSecretStore"
+    metadata = {
+      name = "vault-backend"
+      labels = {
+        "app.kubernetes.io/part-of" = "fabric"
+      }
+    }
+    spec = {
+      provider = {
+        vault = {
+          server  = "http://vault.vault:8200"
+          path    = "secret"
+          version = "v2"
+          auth = {
+            kubernetes = {
+              mountPath = "kubernetes"
+              role      = "fabric-staging"
+              serviceAccountRef = {
+                name      = "fabric"
+                namespace = "external-secrets"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
