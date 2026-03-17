@@ -1,0 +1,38 @@
+# Argo CD Application — FABRIC Infrastructure
+# Design Reference: Section 6.1 (Argo CD Configuration)
+# Manages monitoring alerts, Grafana dashboards, and vault operations
+# These resources span multiple namespaces (monitoring, vault) and are
+# not environment-specific, so they live outside the staging/production overlays.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: fabric-infrastructure
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: fabric
+    fabric/component: infrastructure
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/pmcoe-ai1/fabric-deploy.git
+    targetRevision: main
+    path: infrastructure
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=false
+      - PruneLast=true
+      - ApplyOutOfSyncOnly=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

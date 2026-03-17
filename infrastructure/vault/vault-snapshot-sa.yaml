@@ -1,0 +1,11 @@
+# Vault snapshot service account
+# Split from kubernetes/rbac/fabric-service-accounts.yaml (Defect 6)
+# Lives in infrastructure/ because it targets the vault namespace
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vault-snapshot
+  namespace: vault
+  labels:
+    app.kubernetes.io/name: vault-snapshot
+    app.kubernetes.io/part-of: fabric
