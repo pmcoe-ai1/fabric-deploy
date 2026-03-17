@@ -56,7 +56,7 @@ resource "helm_release" "kube_prometheus_stack" {
     value = "2Gi"
   }
 
-  # Enable ServiceMonitor auto-discovery across all namespaces
+  # Enable ServiceMonitor and PrometheusRule auto-discovery across all namespaces
   set {
     name  = "prometheus.prometheusSpec.serviceMonitorSelectorNilUsesHelmValues"
     value = "false"
@@ -64,6 +64,11 @@ resource "helm_release" "kube_prometheus_stack" {
 
   set {
     name  = "prometheus.prometheusSpec.podMonitorSelectorNilUsesHelmValues"
+    value = "false"
+  }
+
+  set {
+    name  = "prometheus.prometheusSpec.ruleSelectorNilUsesHelmValues"
     value = "false"
   }
 
