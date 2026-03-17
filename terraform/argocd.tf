@@ -3,7 +3,7 @@
 #
 # Deployed via Helm to argocd namespace.
 # Watches the fabric-deploy repo for Kustomize overlay changes.
-# Two Applications: staging and production (created in C-03).
+# Three Applications: staging, production, infrastructure (created in C-03).
 
 resource "helm_release" "argocd" {
   name       = "argocd"
@@ -107,5 +107,12 @@ resource "helm_release" "argocd" {
   set {
     name  = "server.metrics.serviceMonitor.enabled"
     value = "true"
+  }
+
+  # Enable alpha plugins for NamespaceTransformer (unsetOnly: true)
+  # Required by overlays that use builtin NamespaceTransformer
+  set {
+    name  = "server.config.kustomize\.buildOptions"
+    value = "--enable-alpha-plugins"
   }
 }
