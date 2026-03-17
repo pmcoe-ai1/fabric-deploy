@@ -5,10 +5,11 @@ namespace: staging
 
 resources:
   - ../../base
+  - rollout.yaml
 
 patches:
   - target:
-      kind: Deployment
+      kind: Rollout
       name: fabric
     patch: |
       - op: replace

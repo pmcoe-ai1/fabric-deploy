@@ -5,10 +5,11 @@ namespace: production
 
 resources:
   - ../../base
+  - rollout.yaml
 
 patches:
   - target:
-      kind: Deployment
+      kind: Rollout
       name: fabric
     patch: |
       - op: replace
