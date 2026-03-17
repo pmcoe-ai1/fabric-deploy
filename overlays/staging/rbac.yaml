@@ -1,0 +1,39 @@
+# FABRIC RBAC — Staging Least-Privilege Service Account
+# Design Reference: Section 11.2 (Runtime Security)
+# Task E-05: Service accounts per component
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: fabric
+  namespace: staging
+  labels:
+    app.kubernetes.io/name: fabric
+    app.kubernetes.io/part-of: fabric
+---
+# Application Role — minimal permissions for FABRIC pods
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: fabric-app
+  namespace: staging
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps", "secrets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: fabric-app
+  namespace: staging
+subjects:
+  - kind: ServiceAccount
+    name: fabric
+    namespace: staging
+roleRef:
+  kind: Role
+  name: fabric-app
+  apiGroup: rbac.authorization.k8s.io

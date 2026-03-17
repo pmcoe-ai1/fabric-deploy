@@ -6,6 +6,9 @@ namespace: production
 resources:
   - ../../base
   - rollout.yaml
+  - external-secret.yaml
+  - network-policy.yaml
+  - rbac.yaml
 
 patches:
   - target:

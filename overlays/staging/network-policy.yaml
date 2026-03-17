@@ -1,0 +1,93 @@
+# Network Policies — Staging Namespace Isolation
+# Design Reference: Section 11.2 (Runtime Security)
+# Task E-05: Staging pods cannot reach production databases
+
+# Deny all ingress by default
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: staging
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+---
+# Allow ingress from NGINX Ingress
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-nginx
+  namespace: staging
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: fabric
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - port: 3000
+          protocol: TCP
+---
+# Allow ingress from monitoring (Prometheus scrape)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-prometheus-scrape
+  namespace: staging
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: fabric
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - port: 9090
+          protocol: TCP
+---
+# Block egress to production database subnet
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-cross-env-db
+  namespace: staging
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: fabric
+  policyTypes:
+    - Egress
+  egress:
+    # Allow DNS
+    - to: []
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    # Allow egress to own namespace and infrastructure
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: staging
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: vault
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+    # Allow egress to PostgreSQL (VNet subnet)
+    - to: []
+      ports:
+        - port: 5432
+          protocol: TCP
