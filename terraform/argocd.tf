@@ -112,7 +112,7 @@ resource "helm_release" "argocd" {
   # Allow Argo CD repo-server to load transformer files from overlays
   # Required for NamespaceTransformer referenced via transformers: field
   set {
-    name  = "server.config.kustomize\.buildOptions"
+    name  = "server.config.kustomize\\.buildOptions"
     value = "--load-restrictor LoadRestrictionsNone"
   }
 }
