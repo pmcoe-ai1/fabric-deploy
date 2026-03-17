@@ -109,10 +109,10 @@ resource "helm_release" "argocd" {
     value = "true"
   }
 
-  # Enable alpha plugins for NamespaceTransformer (unsetOnly: true)
-  # Required by overlays that use builtin NamespaceTransformer
+  # Allow Argo CD repo-server to load transformer files from overlays
+  # Required for NamespaceTransformer referenced via transformers: field
   set {
     name  = "server.config.kustomize\.buildOptions"
-    value = "--enable-alpha-plugins"
+    value = "--load-restrictor LoadRestrictionsNone"
   }
 }
