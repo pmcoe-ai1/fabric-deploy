@@ -5,14 +5,14 @@
 # NOTE: Notification channel secrets (Slack webhook, PagerDuty key, email config)
 # must be provided by the project team and stored in Vault (secret/fabric/shared/alertmanager).
 #
-# This config is applied via Helm values in terraform/monitoring.tf:
-#   set { name = "alertmanager.config" ... }
-# Or as a Kubernetes Secret patched onto the Alertmanager instance.
+# Applied as a Kubernetes Secret that the Alertmanager instance reads directly.
+# The Secret name must match kube-prometheus-stack's fullname convention:
+#   alertmanager-<release-name>-alertmanager
 
 apiVersion: v1
 kind: Secret
 metadata:
-  name: alertmanager-fabric-config
+  name: alertmanager-kube-prometheus-stack-alertmanager
   namespace: monitoring
   labels:
     app.kubernetes.io/part-of: fabric
