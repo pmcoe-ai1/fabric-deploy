@@ -646,20 +646,24 @@ terraform force-unlock <lock-id>
 
 | Phase | Tasks | Status |
 |-------|-------|--------|
-| 1. Platform Logins | 10 services | DONE — 5/6 external (Domain Registrar pending), 4/4 self-hosted |
+17 of 17 phases complete.
+
+| Phase | Tasks | Status |
+|-------|-------|--------|
+| 1. Platform Logins | 10 services | DONE — all external + self-hosted services configured |
 | 2. Pre-Provisioning | .gitignore + TF state backend + repo | DONE |
 | 3. Defect Fixes | 8 defects in Terraform (13–20) | DONE — all 7 actionable fixed, Defect 20 deferred |
 | 4. terraform.tfvars | Variable values | DONE |
 | 5. TF Phase 1 | Azure + all Helm resources | DONE — AKS, PostgreSQL x2, 11 Helm releases, 5 DNS records |
 | 6. TF Phase 2 | ClusterSecretStore (skip if Defect 18 fixed) | SKIPPED — Defect 18 fix eliminated need |
-| 7. DNS Delegation | NS records at registrar | ☐ — needs domain registrar access |
+| 7. DNS Delegation | NS records at registrar | N/A — fabric.internal is non-routable, no public registrar |
 | 8. Vault Init | Initialize + unseal + HA Raft join | DONE — auto-unseal working, 2-node Raft cluster |
 | 9. Vault Seeding | Secrets, policies, roles + K8s auth patch | DONE — 4 secrets, 2 policies, 2 roles |
 | 10. Argo CD | Repo creds + Applications | DONE — 3 Applications created, repo credentials added |
 | 11. Alertmanager | Replace placeholders | DONE — webhooks + PagerDuty key replaced |
 | 12. Grafana | Verify dashboards + Loki + Tempo | DONE — Grafana, Prometheus, Loki, Tempo all running |
 | 13. Kustomize | Overlay verification | DONE — staging + production build cleanly, Rollout/SecretStore/NetworkPolicy present |
-| 14. Image Pull | ghcr.io imagePullSecrets | ☐ — needs GitHub PAT with read:packages |
+| 14. Image Pull | ghcr.io imagePullSecrets | DONE — ghcr-pull secret created, fabric SA patched in both namespaces |
 | 15. Smoke Test | End-to-end verification | DONE — SecretStores Valid, ExternalSecrets SecretSynced, CRDs registered, NetworkPolicies active |
-| 16. CI Integration | GitHub Actions — AKS | ☐ — needs GitHub repo admin for Actions secrets |
+| 16. CI Integration | GitHub Actions — AKS | DONE — 5 secrets set (KUBECONFIG, AZURE_SUBSCRIPTION_ID, AZURE_TENANT_ID, AKS_RESOURCE_GROUP, AKS_CLUSTER_NAME) |
 | 17. Post-Provisioning | Refresh intervals, rollback docs | DONE — staging 1m, production 5m |
