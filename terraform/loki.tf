@@ -179,12 +179,6 @@ resource "helm_release" "promtail" {
     value = "http://loki:3100/loki/api/v1/push"
   }
 
-  # Collect from all namespaces
-  set {
-    name  = "config.snippets.scrapeConfigs"
-    value = ""
-  }
-
   # Resource requests (DaemonSet — runs on every node)
   set {
     name  = "resources.requests.cpu"
