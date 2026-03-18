@@ -48,14 +48,14 @@ stringData:
           repeat_interval: 1h
           continue: true
 
-        # Critical alerts → also Slack #fabric-alerts-critical
+        # Critical alerts → also Slack #critical-alerts
         - receiver: slack-critical
           matchers:
             - severity = critical
           group_wait: 10s
           repeat_interval: 1h
 
-        # Warning alerts → Slack #fabric-alerts
+        # Warning alerts → Slack #warning-alerts
         - receiver: slack-warning
           matchers:
             - severity = warning
@@ -66,15 +66,15 @@ stringData:
       - name: default
         # Catch-all — sends to general Slack channel
         slack_configs:
-          - api_url: SLACK_WEBHOOK_URL_PLACEHOLDER
-            channel: '#fabric-alerts'
+          - api_url: https://hooks.slack.com/services/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
+            channel: '#info-alerts'
             title: '{{ template "slack.title" . }}'
             text: '{{ template "slack.text" . }}'
             send_resolved: true
 
       - name: pagerduty-critical
         pagerduty_configs:
-          - service_key: PAGERDUTY_SERVICE_KEY_PLACEHOLDER
+          - routing_key: 5e40313c69324e0ed0f152747cc1c5ef
             severity: '{{ if eq .CommonLabels.severity "critical" }}critical{{ else }}warning{{ end }}'
             description: '{{ .CommonAnnotations.summary }}'
             details:
@@ -84,8 +84,8 @@ stringData:
 
       - name: slack-critical
         slack_configs:
-          - api_url: SLACK_WEBHOOK_URL_PLACEHOLDER
-            channel: '#fabric-alerts-critical'
+          - api_url: https://hooks.slack.com/services/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
+            channel: '#critical-alerts'
             title: ':rotating_light: CRITICAL: {{ .CommonLabels.alertname }}'
             text: |
               *Alert:* {{ .CommonAnnotations.summary }}
@@ -97,8 +97,8 @@ stringData:
 
       - name: slack-warning
         slack_configs:
-          - api_url: SLACK_WEBHOOK_URL_PLACEHOLDER
-            channel: '#fabric-alerts'
+          - api_url: https://hooks.slack.com/services/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
+            channel: '#warning-alerts'
             title: ':warning: WARNING: {{ .CommonLabels.alertname }}'
             text: |
               *Alert:* {{ .CommonAnnotations.summary }}
