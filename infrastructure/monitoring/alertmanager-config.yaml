@@ -66,7 +66,7 @@ stringData:
       - name: default
         # Catch-all — sends to general Slack channel
         slack_configs:
-          - api_url: https://hooks.slack.com/services/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
+          - api_url: https://hooks.slack.com/services/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
             channel: '#info-alerts'
             title: '{{ template "slack.title" . }}'
             text: '{{ template "slack.text" . }}'
@@ -84,7 +84,7 @@ stringData:
 
       - name: slack-critical
         slack_configs:
-          - api_url: https://hooks.slack.com/services/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
+          - api_url: https://hooks.slack.com/services/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
             channel: '#critical-alerts'
             title: ':rotating_light: CRITICAL: {{ .CommonLabels.alertname }}'
             text: |
@@ -97,7 +97,7 @@ stringData:
 
       - name: slack-warning
         slack_configs:
-          - api_url: https://hooks.slack.com/services/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
+          - api_url: https://hooks.slack.com/services/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
             channel: '#warning-alerts'
             title: ':warning: WARNING: {{ .CommonLabels.alertname }}'
             text: |
