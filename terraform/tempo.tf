@@ -19,9 +19,28 @@ resource "helm_release" "tempo" {
     helm_release.kube_prometheus_stack,
   ]
 
+  timeout = 300
+  wait    = false
+
   set {
     name  = "tempo.nodeSelector.fabric/pool"
     value = "system"
+  }
+
+  # Pod-level securityContext — fsGroup allows writing to PVC mount
+  set {
+    name  = "securityContext.fsGroup"
+    value = "10001"
+  }
+
+  set {
+    name  = "securityContext.runAsUser"
+    value = "10001"
+  }
+
+  set {
+    name  = "securityContext.runAsGroup"
+    value = "10001"
   }
 
   # Storage — local PVC

@@ -130,6 +130,12 @@ resource "helm_release" "vault" {
     EOT
   }
 
+  # Disable anti-affinity for 2-node sandbox cluster
+  set {
+    name  = "server.affinity"
+    value = ""
+  }
+
   # Node selector — system pool
   set {
     name  = "server.nodeSelector.fabric/pool"

@@ -139,6 +139,17 @@ resource "helm_release" "loki" {
     value = "512Mi"
   }
 
+  # Disable chunks cache (not needed for filesystem SingleBinary mode)
+  set {
+    name  = "chunksCache.enabled"
+    value = "false"
+  }
+
+  set {
+    name  = "resultsCache.enabled"
+    value = "false"
+  }
+
   # Disable test pods
   set {
     name  = "test.enabled"
