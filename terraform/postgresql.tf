@@ -10,7 +10,7 @@
 resource "azurerm_subnet" "postgresql" {
   name                 = "fabric-postgresql-subnet"
   resource_group_name  = azurerm_resource_group.fabric.name
-  virtual_network_name = azurerm_kubernetes_cluster.fabric.name
+  virtual_network_name = azurerm_virtual_network.fabric.name
   address_prefixes     = ["10.1.0.0/24"]
 
   delegation {
@@ -35,13 +35,12 @@ resource "azurerm_private_dns_zone_virtual_network_link" "postgresql" {
   name                  = "fabric-postgresql-dns-link"
   private_dns_zone_name = azurerm_private_dns_zone.postgresql.name
   resource_group_name   = azurerm_resource_group.fabric.name
-  virtual_network_id    = azurerm_kubernetes_cluster.fabric.network_profile[0].pod_cidr != null ? null : data.azurerm_virtual_network.aks.id
+  virtual_network_id    = azurerm_virtual_network.fabric.id
 
-  # Fallback: use the VNet associated with AKS
   depends_on = [azurerm_private_dns_zone.postgresql]
 }
 
-# ── Staging Instance ─────────────────────────────────────────────────────────
+# -- Staging Instance ---
 resource "azurerm_postgresql_flexible_server" "staging" {
   name                   = "${var.cluster_name}-pg-staging"
   resource_group_name    = azurerm_resource_group.fabric.name
@@ -70,7 +69,7 @@ resource "azurerm_postgresql_flexible_server_database" "staging" {
   collation = "en_US.utf8"
 }
 
-# ── Production Instance ──────────────────────────────────────────────────────
+# -- Production Instance ---
 resource "azurerm_postgresql_flexible_server" "production" {
   name                   = "${var.cluster_name}-pg-production"
   resource_group_name    = azurerm_resource_group.fabric.name
@@ -103,10 +102,4 @@ resource "azurerm_postgresql_flexible_server_database" "production" {
   server_id = azurerm_postgresql_flexible_server.production.id
   charset   = "UTF8"
   collation = "en_US.utf8"
-}
-
-# ── Data source: AKS VNet ────────────────────────────────────────────────────
-data "azurerm_virtual_network" "aks" {
-  name                = "${var.cluster_name}-vnet"
-  resource_group_name = azurerm_resource_group.fabric.name
 }

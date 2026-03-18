@@ -9,6 +9,24 @@ resource "azurerm_resource_group" "fabric" {
   tags     = merge(var.tags, { environment = var.environment })
 }
 
+# Explicit VNet for AKS and PostgreSQL
+# Defect 16 fix: AKS with Azure CNI creates VNet in MC_* resource group.
+# We need an explicit VNet in fabric-rg for PostgreSQL private access.
+resource "azurerm_virtual_network" "fabric" {
+  name                = "${var.cluster_name}-vnet"
+  location            = azurerm_resource_group.fabric.location
+  resource_group_name = azurerm_resource_group.fabric.name
+  address_space       = ["10.0.0.0/8"]
+  tags                = var.tags
+}
+
+resource "azurerm_subnet" "aks_nodes" {
+  name                 = "aks-nodes"
+  resource_group_name  = azurerm_resource_group.fabric.name
+  virtual_network_name = azurerm_virtual_network.fabric.name
+  address_prefixes     = ["10.0.0.0/16"]
+}
+
 # AKS Cluster — single cluster, namespace isolation
 resource "azurerm_kubernetes_cluster" "fabric" {
   name                = var.cluster_name
@@ -25,6 +43,7 @@ resource "azurerm_kubernetes_cluster" "fabric" {
     vm_size             = var.system_node_vm_size
     os_disk_size_gb     = 50
     enable_auto_scaling = false
+    vnet_subnet_id      = azurerm_subnet.aks_nodes.id
 
     node_labels = {
       "fabric/pool" = "system"

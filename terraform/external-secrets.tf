@@ -1,9 +1,16 @@
 # External Secrets Operator — Vault-to-Kubernetes Secret Syncing
 # Design Reference: Section 8.2 (External Secrets Operator Flow)
-# Task E-03: Deploy ESO and configure ClusterSecretStore + ExternalSecrets
+# Task E-03: Deploy ESO and configure SecretStores + ExternalSecrets
 #
 # Deployed via Helm to external-secrets namespace.
 # Syncs secrets from HashiCorp Vault to Kubernetes Secrets every 15s.
+#
+# Defect 18 fix: Removed ClusterSecretStore (kubernetes_manifest) from Terraform.
+# Replaced with namespace-scoped SecretStore YAMLs in overlays/staging/ and
+# overlays/production/ — managed by Argo CD. This eliminates:
+#   - The two-phase apply requirement (Defect 14)
+#   - The ServiceAccount namespace mismatch
+#   - The single-role-for-both-envs problem
 
 resource "helm_release" "external_secrets" {
   name       = "external-secrets"
@@ -60,47 +67,5 @@ resource "helm_release" "external_secrets" {
   set {
     name  = "serviceMonitor.namespace"
     value = "monitoring"
-  }
-}
-
-# ClusterSecretStore — Vault Backend
-# Design Reference: Section 8.2 (External Secrets Operator Flow)
-# Points to internal Vault cluster address via Kubernetes auth.
-# Managed in Terraform because it's a cluster-scoped CRD that depends on
-# both ESO and Vault being deployed first.
-resource "kubernetes_manifest" "cluster_secret_store" {
-  depends_on = [
-    helm_release.external_secrets,
-    helm_release.vault
-  ]
-
-  manifest = {
-    apiVersion = "external-secrets.io/v1beta1"
-    kind       = "ClusterSecretStore"
-    metadata = {
-      name = "vault-backend"
-      labels = {
-        "app.kubernetes.io/part-of" = "fabric"
-      }
-    }
-    spec = {
-      provider = {
-        vault = {
-          server  = "http://vault.vault:8200"
-          path    = "secret"
-          version = "v2"
-          auth = {
-            kubernetes = {
-              mountPath = "kubernetes"
-              role      = "fabric-staging"
-              serviceAccountRef = {
-                name      = "fabric"
-                namespace = "external-secrets"
-              }
-            }
-          }
-        }
-      }
-    }
   }
 }

@@ -86,6 +86,7 @@ resource "helm_release" "vault" {
   }
 
   # Azure Key Vault auto-unseal configuration
+  # Defect 19 fix: added tenant_id — required for Azure AD authentication
   set {
     name  = "server.ha.raft.config"
     value = <<-EOT
@@ -104,6 +105,7 @@ resource "helm_release" "vault" {
       seal "azurekeyvault" {
         vault_name = "${azurerm_key_vault.vault_unseal.name}"
         key_name   = "${azurerm_key_vault_key.vault_unseal.name}"
+        tenant_id  = "${data.azurerm_client_config.current.tenant_id}"
       }
 
       service_registration "kubernetes" {}

@@ -26,7 +26,7 @@ variable "cluster_name" {
 
 variable "kubernetes_version" {
   type        = string
-  default     = "1.29"
+  default     = "1.32"
   description = "Kubernetes version for AKS (latest stable)"
 }
 
@@ -38,8 +38,8 @@ variable "system_node_count" {
 
 variable "system_node_vm_size" {
   type        = string
-  default     = "Standard_B2s"
-  description = "VM size for system node pool (B-series burstable for cost efficiency)"
+  default     = "Standard_D2s_v3"
+  description = "VM size for system node pool (D-series for production workloads)"
 }
 
 variable "app_node_count" {

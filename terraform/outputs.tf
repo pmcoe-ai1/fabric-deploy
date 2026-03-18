@@ -27,12 +27,17 @@ output "cluster_fqdn" {
 }
 
 output "postgresql_fqdn" {
-  value       = azurerm_postgresql_flexible_server.fabric.fqdn
-  description = "PostgreSQL Flexible Server FQDN"
+  value       = azurerm_postgresql_flexible_server.staging.fqdn
+  description = "Staging PostgreSQL Flexible Server FQDN"
+}
+
+output "postgresql_production_fqdn" {
+  value       = azurerm_postgresql_flexible_server.production.fqdn
+  description = "Production PostgreSQL Flexible Server FQDN"
 }
 
 output "postgresql_admin_username" {
-  value       = azurerm_postgresql_flexible_server.fabric.administrator_login
+  value       = azurerm_postgresql_flexible_server.staging.administrator_login
   sensitive   = true
   description = "PostgreSQL administrator username"
 }
