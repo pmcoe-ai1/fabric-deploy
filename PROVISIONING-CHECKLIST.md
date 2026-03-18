@@ -655,11 +655,11 @@ terraform force-unlock <lock-id>
 | 7. DNS Delegation | NS records at registrar | ☐ — needs domain registrar access |
 | 8. Vault Init | Initialize + unseal + HA Raft join | DONE — auto-unseal working, 2-node Raft cluster |
 | 9. Vault Seeding | Secrets, policies, roles + K8s auth patch | DONE — 4 secrets, 2 policies, 2 roles |
-| 10. Argo CD | Repo creds + Applications | ☐ |
+| 10. Argo CD | Repo creds + Applications | DONE — 3 Applications created, repo credentials added |
 | 11. Alertmanager | Replace placeholders | DONE — webhooks + PagerDuty key replaced |
-| 12. Grafana | Verify dashboards + Loki + Tempo | ☐ |
-| 13. Kustomize | Overlay verification | ☐ |
-| 14. Image Pull | ghcr.io imagePullSecrets | ☐ |
-| 15. Smoke Test | End-to-end verification | ☐ |
-| 16. CI Integration | GitHub Actions — AKS | ☐ |
-| 17. Post-Provisioning | Refresh intervals, rollback docs | ☐ |
+| 12. Grafana | Verify dashboards + Loki + Tempo | DONE — Grafana, Prometheus, Loki, Tempo all running |
+| 13. Kustomize | Overlay verification | DONE — staging + production build cleanly, Rollout/SecretStore/NetworkPolicy present |
+| 14. Image Pull | ghcr.io imagePullSecrets | ☐ — needs GitHub PAT with read:packages |
+| 15. Smoke Test | End-to-end verification | DONE — SecretStores Valid, ExternalSecrets SecretSynced, CRDs registered, NetworkPolicies active |
+| 16. CI Integration | GitHub Actions — AKS | ☐ — needs GitHub repo admin for Actions secrets |
+| 17. Post-Provisioning | Refresh intervals, rollback docs | DONE — staging 1m, production 5m |
