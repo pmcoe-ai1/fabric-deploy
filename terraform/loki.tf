@@ -19,6 +19,9 @@ resource "helm_release" "loki" {
     helm_release.kube_prometheus_stack,
   ]
 
+  timeout = 600
+  wait    = false
+
   # Single-binary mode for simplicity (suitable for staging/small prod)
   set {
     name  = "deploymentMode"
@@ -30,12 +33,33 @@ resource "helm_release" "loki" {
     value = "1"
   }
 
+  # Disable simple scalable targets to avoid conflict with SingleBinary mode
+  set {
+    name  = "read.replicas"
+    value = "0"
+  }
+
+  set {
+    name  = "write.replicas"
+    value = "0"
+  }
+
+  set {
+    name  = "backend.replicas"
+    value = "0"
+  }
+
   set {
     name  = "singleBinary.nodeSelector.fabric/pool"
     value = "system"
   }
 
-  # Storage — local PVC (upgrade to Azure Blob for durability in production)
+  # Storage — filesystem (upgrade to Azure Blob for durability in production)
+  set {
+    name  = "loki.storage.type"
+    value = "filesystem"
+  }
+
   set {
     name  = "singleBinary.persistence.enabled"
     value = "true"
@@ -134,6 +158,9 @@ resource "helm_release" "promtail" {
     kubernetes_namespace.fabric["monitoring"],
     helm_release.loki,
   ]
+
+  timeout = 600
+  wait    = false
 
   # Loki endpoint
   set {

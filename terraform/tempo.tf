@@ -98,6 +98,12 @@ resource "helm_release" "otel_collector" {
     helm_release.tempo,
   ]
 
+  # Required since chart v0.92.0
+  set {
+    name  = "image.repository"
+    value = "otel/opentelemetry-collector-contrib"
+  }
+
   set {
     name  = "mode"
     value = "deployment"

@@ -15,6 +15,9 @@ resource "helm_release" "nginx_ingress" {
 
   depends_on = [kubernetes_namespace.fabric["ingress-nginx"]]
 
+  timeout = 600
+  wait    = false
+
   # Controller configuration
   set {
     name  = "controller.replicaCount"
@@ -52,12 +55,6 @@ resource "helm_release" "nginx_ingress" {
   set {
     name  = "controller.service.annotations.service\\.beta\\.kubernetes\\.io/azure-load-balancer-health-probe-request-path"
     value = "/healthz"
-  }
-
-  # TLS default certificate (cert-manager will manage actual certs)
-  set {
-    name  = "controller.extraArgs.default-ssl-certificate"
-    value = ""
   }
 
   # Resource limits for system pool

@@ -38,12 +38,13 @@ resource "azurerm_kubernetes_cluster" "fabric" {
 
   # System node pool: Argo CD, Vault, Prometheus, Grafana, Loki, Tempo, ESO, NGINX Ingress, Argo Rollouts
   default_node_pool {
-    name                = "system"
-    node_count          = var.system_node_count
-    vm_size             = var.system_node_vm_size
-    os_disk_size_gb     = 50
-    enable_auto_scaling = false
-    vnet_subnet_id      = azurerm_subnet.aks_nodes.id
+    name                        = "system"
+    node_count                  = var.system_node_count
+    vm_size                     = var.system_node_vm_size
+    os_disk_size_gb             = 50
+    enable_auto_scaling         = false
+    vnet_subnet_id              = azurerm_subnet.aks_nodes.id
+    temporary_name_for_rotation = "tmpsystem"
 
     node_labels = {
       "fabric/pool" = "system"
@@ -57,13 +58,17 @@ resource "azurerm_kubernetes_cluster" "fabric" {
   network_profile {
     network_plugin = "azure"
     network_policy = "azure"
+    service_cidr   = "172.16.0.0/16"
+    dns_service_ip = "172.16.0.10"
   }
 
   tags = merge(var.tags, { environment = var.environment })
 }
 
 # Application node pool: FABRIC application pods
+# Conditional: skipped when app_node_count = 0 (e.g., sandbox vCPU quota limits)
 resource "azurerm_kubernetes_cluster_node_pool" "app" {
+  count                 = var.app_node_count > 0 ? 1 : 0
   name                  = "app"
   kubernetes_cluster_id = azurerm_kubernetes_cluster.fabric.id
   vm_size               = var.app_node_vm_size

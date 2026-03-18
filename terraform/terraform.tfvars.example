@@ -9,4 +9,4 @@ kubernetes_version  = "1.32"
 system_node_count   = 2
 system_node_vm_size = "Standard_D2s_v3"
 app_node_count      = 2
-app_node_vm_size    = "Standard_B2s"
+app_node_vm_size    = "Standard_B2s_v2"

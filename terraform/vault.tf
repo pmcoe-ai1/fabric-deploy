@@ -20,6 +20,24 @@ resource "azurerm_key_vault" "vault_unseal" {
   tags = merge(var.tags, { component = "vault" })
 }
 
+# Access policy for deploying user to create/manage keys in Key Vault
+resource "azurerm_key_vault_access_policy" "deployer" {
+  key_vault_id = azurerm_key_vault.vault_unseal.id
+  tenant_id    = data.azurerm_client_config.current.tenant_id
+  object_id    = data.azurerm_client_config.current.object_id
+
+  key_permissions = [
+    "Get",
+    "List",
+    "Create",
+    "Delete",
+    "Update",
+    "Recover",
+    "Purge",
+    "GetRotationPolicy",
+  ]
+}
+
 # Access policy for AKS managed identity to use Key Vault for auto-unseal
 resource "azurerm_key_vault_access_policy" "vault_unseal" {
   key_vault_id = azurerm_key_vault.vault_unseal.id

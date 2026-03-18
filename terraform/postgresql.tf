@@ -52,8 +52,9 @@ resource "azurerm_postgresql_flexible_server" "staging" {
   sku_name   = "B_Standard_B1ms"
   storage_mb = 32768
 
-  delegated_subnet_id = azurerm_subnet.postgresql.id
-  private_dns_zone_id = azurerm_private_dns_zone.postgresql.id
+  delegated_subnet_id           = azurerm_subnet.postgresql.id
+  private_dns_zone_id           = azurerm_private_dns_zone.postgresql.id
+  public_network_access_enabled = false
 
   zone = "1"
 
@@ -81,8 +82,9 @@ resource "azurerm_postgresql_flexible_server" "production" {
   sku_name   = "GP_Standard_D2s_v3"
   storage_mb = 65536
 
-  delegated_subnet_id = azurerm_subnet.postgresql.id
-  private_dns_zone_id = azurerm_private_dns_zone.postgresql.id
+  delegated_subnet_id           = azurerm_subnet.postgresql.id
+  private_dns_zone_id           = azurerm_private_dns_zone.postgresql.id
+  public_network_access_enabled = false
 
   # Zone-redundant HA — per Section 7.1
   high_availability {

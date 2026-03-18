@@ -50,7 +50,7 @@ variable "app_node_count" {
 
 variable "app_node_vm_size" {
   type        = string
-  default     = "Standard_B2s"
+  default     = "Standard_B2s_v2"
   description = "VM size for application node pool"
 }
 
