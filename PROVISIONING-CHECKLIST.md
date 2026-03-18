@@ -646,17 +646,17 @@ terraform force-unlock <lock-id>
 
 | Phase | Tasks | Status |
 |-------|-------|--------|
-| 1. Platform Logins | 10 services | Partial — 5/6 external done (Domain Registrar pending) |
-| 2. Pre-Provisioning | .gitignore + TF state backend + repo | ☐ |
-| 3. Defect Fixes | 8 defects in Terraform (13–20) | ☐ |
-| 4. terraform.tfvars | Variable values | ☐ |
-| 5. TF Phase 1 | Azure + all Helm resources | ☐ |
-| 6. TF Phase 2 | ClusterSecretStore (skip if Defect 18 fixed) | ☐ |
-| 7. DNS Delegation | NS records at registrar | ☐ |
-| 8. Vault Init | Initialize + unseal + HA Raft join | ☐ |
-| 9. Vault Seeding | Secrets, policies, roles + K8s auth patch | ☐ |
+| 1. Platform Logins | 10 services | DONE — 5/6 external (Domain Registrar pending), 4/4 self-hosted |
+| 2. Pre-Provisioning | .gitignore + TF state backend + repo | DONE |
+| 3. Defect Fixes | 8 defects in Terraform (13–20) | DONE — all 7 actionable fixed, Defect 20 deferred |
+| 4. terraform.tfvars | Variable values | DONE |
+| 5. TF Phase 1 | Azure + all Helm resources | DONE — AKS, PostgreSQL x2, 11 Helm releases, 5 DNS records |
+| 6. TF Phase 2 | ClusterSecretStore (skip if Defect 18 fixed) | SKIPPED — Defect 18 fix eliminated need |
+| 7. DNS Delegation | NS records at registrar | ☐ — needs domain registrar access |
+| 8. Vault Init | Initialize + unseal + HA Raft join | DONE — auto-unseal working, 2-node Raft cluster |
+| 9. Vault Seeding | Secrets, policies, roles + K8s auth patch | DONE — 4 secrets, 2 policies, 2 roles |
 | 10. Argo CD | Repo creds + Applications | ☐ |
-| 11. Alertmanager | Replace placeholders | Partial — placeholders replaced, commit pending |
+| 11. Alertmanager | Replace placeholders | DONE — webhooks + PagerDuty key replaced |
 | 12. Grafana | Verify dashboards + Loki + Tempo | ☐ |
 | 13. Kustomize | Overlay verification | ☐ |
 | 14. Image Pull | ghcr.io imagePullSecrets | ☐ |
