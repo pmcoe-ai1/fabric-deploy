@@ -36,7 +36,7 @@ spec:
     spec:
       containers:
         - name: fabric
-          image: ghcr.io/pmcoe-ai1/fabric:build-local-2
+          image: ghcr.io/pmcoe-ai1/fabric:build-local-3
           ports:
             - name: http
               containerPort: 3000
