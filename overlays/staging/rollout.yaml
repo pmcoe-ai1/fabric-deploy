@@ -46,13 +46,13 @@ spec:
               protocol: TCP
           livenessProbe:
             httpGet:
-              path: /healthz
+              path: /health
               port: http
             initialDelaySeconds: 10
             periodSeconds: 30
           readinessProbe:
             httpGet:
-              path: /healthz
+              path: /health
               port: http
             initialDelaySeconds: 5
             periodSeconds: 10
@@ -120,8 +120,8 @@ spec:
         prometheus:
           address: http://kube-prometheus-stack-prometheus.monitoring:9090
           query: |
-            sum(rate(http_requests_total{namespace="staging",status=~"5.."}[2m]))
-            / sum(rate(http_requests_total{namespace="staging"}[2m]))
+            sum(rate(fabric_http_requests_total{namespace="staging",status=~"5.."}[2m]))
+            / sum(rate(fabric_http_requests_total{namespace="staging"}[2m]))
       successCondition: result[0] < 0.05
       failureLimit: 3
       interval: 30s

@@ -75,7 +75,7 @@ spec:
       serviceAccountName: fabric
       containers:
         - name: fabric
-          image: ghcr.io/pmcoe-ai1/fabric:latest
+          image: ghcr.io/pmcoe-ai1/fabric:build-local-2
           ports:
             - name: http
               containerPort: 3000
@@ -85,13 +85,13 @@ spec:
               protocol: TCP
           livenessProbe:
             httpGet:
-              path: /healthz
+              path: /health
               port: http
             initialDelaySeconds: 10
             periodSeconds: 30
           readinessProbe:
             httpGet:
-              path: /healthz
+              path: /health
               port: http
             initialDelaySeconds: 5
             periodSeconds: 10
@@ -187,8 +187,8 @@ spec:
         prometheus:
           address: http://kube-prometheus-stack-prometheus.monitoring:9090
           query: |
-            sum(rate(http_requests_total{namespace="production",status=~"5.."}[5m]))
-            / sum(rate(http_requests_total{namespace="production"}[5m]))
+            sum(rate(fabric_http_requests_total{namespace="production",status=~"5.."}[5m]))
+            / sum(rate(fabric_http_requests_total{namespace="production"}[5m]))
       successCondition: result[0] < 0.001
       failureLimit: 3
       interval: 60s
@@ -201,7 +201,7 @@ spec:
           address: http://kube-prometheus-stack-prometheus.monitoring:9090
           query: |
             histogram_quantile(0.99,
-              sum(rate(http_request_duration_seconds_bucket{namespace="production"}[5m])) by (le)
+              sum(rate(fabric_http_request_duration_seconds_bucket{namespace="production"}[5m])) by (le)
             )
       successCondition: result[0] < 0.5
       failureLimit: 3

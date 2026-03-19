@@ -1,0 +1,17 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: fabric-app
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+spec:
+  namespaceSelector:
+    matchNames: [staging, production]
+  selector:
+    matchLabels:
+      app: fabric
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 15s
