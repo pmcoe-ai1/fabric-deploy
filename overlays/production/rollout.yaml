@@ -75,7 +75,7 @@ spec:
       serviceAccountName: fabric
       containers:
         - name: fabric
-          image: ghcr.io/pmcoe-ai1/fabric:integration-d0ad4476-31
+          image: ghcr.io/pmcoe-ai1/fabric:integration-d0ad4476-33
           ports:
             - name: http
               containerPort: 3000
