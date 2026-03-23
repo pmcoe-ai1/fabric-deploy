@@ -36,10 +36,14 @@ spec:
                   # Take snapshot
                   vault operator raft snapshot save "/tmp/${SNAPSHOT_NAME}"
 
-                  # Upload to Azure Blob Storage using azcopy (pre-installed)
-                  # The SAS token is provided via environment variable
-                  azcopy copy "/tmp/${SNAPSHOT_NAME}" \
-                    "${AZURE_BLOB_CONTAINER_URL}/${SNAPSHOT_NAME}${AZURE_SAS_TOKEN}"
+                  # Upload to Azure Blob Storage using wget (PUT with x-ms-blob-type header)
+                  # The hashicorp/vault image does not include azcopy, but wget is available
+                  BLOB_URL="${AZURE_BLOB_CONTAINER_URL}/${SNAPSHOT_NAME}${AZURE_SAS_TOKEN}"
+                  wget --method=PUT \
+                    --header="x-ms-blob-type: BlockBlob" \
+                    --body-file="/tmp/${SNAPSHOT_NAME}" \
+                    -O /dev/null -q \
+                    "${BLOB_URL}"
 
                   echo "Snapshot uploaded: ${SNAPSHOT_NAME}"
 
