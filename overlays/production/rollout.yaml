@@ -73,6 +73,8 @@ spec:
         app.kubernetes.io/name: fabric
     spec:
       serviceAccountName: fabric
+      imagePullSecrets:
+        - name: ghcr-pull
       containers:
         - name: fabric
           image: ghcr.io/pmcoe-ai1/fabric:integration-d0ad4476-37
@@ -182,19 +184,22 @@ spec:
     - name: canary-weight
   metrics:
     # Error rate: 5xx / total must be < 0.1%
+    # Uses division guard (> 0) and or vector(0) to return 0 when no metrics exist
     - name: error-rate
       provider:
         prometheus:
           address: http://kube-prometheus-stack-prometheus.monitoring:9090
           query: |
             sum(rate(fabric_http_requests_total{namespace="production",status=~"5.."}[5m]))
-            / sum(rate(fabric_http_requests_total{namespace="production"}[5m]))
+            / (sum(rate(fabric_http_requests_total{namespace="production"}[5m])) > 0)
+            or vector(0)
       successCondition: result[0] < 0.001
       failureLimit: 3
       interval: 60s
       count: 5
 
     # P99 latency must be < 500ms
+    # Uses or vector(0) to return 0 when no histogram data exists
     - name: p99-latency
       provider:
         prometheus:
@@ -202,31 +207,35 @@ spec:
           query: |
             histogram_quantile(0.99,
               sum(rate(fabric_http_request_duration_seconds_bucket{namespace="production"}[5m])) by (le)
-            )
+            ) or vector(0)
       successCondition: result[0] < 0.5
       failureLimit: 3
       interval: 60s
       count: 5
 
     # Contract version mismatches must be 0
+    # Uses or vector(0) to return 0 when metric does not exist
     - name: contract-version-mismatch
       provider:
         prometheus:
           address: http://kube-prometheus-stack-prometheus.monitoring:9090
           query: |
             sum(increase(contract_version_mismatch_total{namespace="production"}[5m]))
+            or vector(0)
       successCondition: result[0] == 0
       failureLimit: 1
       interval: 60s
       count: 5
 
     # Lifecycle transition failures must be 0
+    # Uses or vector(0) to return 0 when metric does not exist
     - name: lifecycle-transition-failure
       provider:
         prometheus:
           address: http://kube-prometheus-stack-prometheus.monitoring:9090
           query: |
             sum(increase(lifecycle_transition_failure_total{namespace="production"}[5m]))
+            or vector(0)
       successCondition: result[0] == 0
       failureLimit: 1
       interval: 60s
@@ -240,12 +249,14 @@ metadata:
   namespace: production
 spec:
   metrics:
+    # Uses or vector(0) to return 0 when metric does not exist
     - name: gapflag-count
       provider:
         prometheus:
           address: http://kube-prometheus-stack-prometheus.monitoring:9090
           query: |
             sum(increase(gapflag_emission_total{namespace="production"}[10m]))
+            or vector(0)
       successCondition: result[0] == 0
       failureLimit: 1
       interval: 120s

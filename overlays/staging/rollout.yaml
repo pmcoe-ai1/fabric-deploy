@@ -34,6 +34,8 @@ spec:
       labels:
         app.kubernetes.io/name: fabric
     spec:
+      imagePullSecrets:
+        - name: ghcr-pull
       containers:
         - name: fabric
           image: ghcr.io/pmcoe-ai1/fabric:integration-d0ad4476-31
@@ -115,13 +117,15 @@ metadata:
   namespace: staging
 spec:
   metrics:
+    # Uses division guard (> 0) and or vector(0) to return 0 when no metrics exist
     - name: health-check
       provider:
         prometheus:
           address: http://kube-prometheus-stack-prometheus.monitoring:9090
           query: |
             sum(rate(fabric_http_requests_total{namespace="staging",status=~"5.."}[2m]))
-            / sum(rate(fabric_http_requests_total{namespace="staging"}[2m]))
+            / (sum(rate(fabric_http_requests_total{namespace="staging"}[2m])) > 0)
+            or vector(0)
       successCondition: result[0] < 0.05
       failureLimit: 3
       interval: 30s

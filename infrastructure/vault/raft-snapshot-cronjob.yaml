@@ -21,8 +21,6 @@ spec:
       template:
         spec:
           serviceAccountName: vault-snapshot
-          nodeSelector:
-            fabric/pool: system
           restartPolicy: OnFailure
           containers:
             - name: snapshot
