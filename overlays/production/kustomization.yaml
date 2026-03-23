@@ -11,6 +11,7 @@ resources:
   - secret-store.yaml
   - network-policy.yaml
   - rbac.yaml
+  - hpa.yaml
 
 patches:
   - target:
