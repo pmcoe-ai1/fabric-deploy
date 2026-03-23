@@ -43,6 +43,7 @@ spec:
                   SNAPSHOT_NAME="vault-snapshot-$(date +%Y%m%d-%H%M%S).snap"
                   echo "Taking Raft snapshot: ${SNAPSHOT_NAME}"
                   vault operator raft snapshot save "/snapshots/${SNAPSHOT_NAME}"
+                  chmod 644 "/snapshots/${SNAPSHOT_NAME}"
                   echo "${SNAPSHOT_NAME}" > /snapshots/SNAPSHOT_NAME
                   echo "Snapshot saved to /snapshots/${SNAPSHOT_NAME}"
               env:
